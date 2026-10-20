@@ -1621,10 +1621,11 @@ footer.note{font-size:11.5px;color:var(--text-soft);text-align:center;margin-top
     return 'Join date unknown';
   }
   function fmtJoin(u){
-    if(u.days_since_join===null||u.days_since_join===undefined) return u.join_date || '—';
+    var datePart = u.join_time ? String(u.join_time).split(' ')[0] : '—';
+    if(u.days_since_join===null||u.days_since_join===undefined) return datePart;
     var d = Math.round(u.days_since_join);
     var when = d===0 ? 'today' : (d===1 ? '1 day ago' : d+' days ago');
-    return (u.join_date||'—') + ' (' + when + ')';
+    return datePart + ' (' + when + ')';
   }
 
   function renderUnmatched(){
@@ -1635,7 +1636,7 @@ footer.note{font-size:11.5px;color:var(--text-soft);text-align:center;margin-top
     var results = UNMATCHED.filter(function(u){
       if(bucketF && u.bucket!==bucketF) return false;
       if(q){
-        var hay = ((u.gametize_name||'')+' '+(u.gametize_email||'')).toLowerCase();
+        var hay = ((u.name||'')+' '+(u.email||'')).toLowerCase();
         if(hay.indexOf(q)===-1) return false;
       }
       return true;
@@ -1644,13 +1645,13 @@ footer.note{font-size:11.5px;color:var(--text-soft);text-align:center;margin-top
     results.sort(function(a,b){
       if(sortBy==='points') return (b.points||0)-(a.points||0);
       if(sortBy==='activity'){
-        var da = a.days_since_last_activity, db = b.days_since_last_activity;
-        if(da===null||da===undefined) return 1; if(db===null||db===undefined) return -1;
-        return da-db;
+        var da = a.last_activity_at, db = b.last_activity_at;
+        if(!da) return 1; if(!db) return -1;
+        return db.localeCompare(da);
       }
-      if(sortBy==='name') return (a.gametize_name||'').localeCompare(b.gametize_name||'');
+      if(sortBy==='name') return (a.name||'').localeCompare(b.name||'');
       // default: join date, newest first
-      var ja = a.join_date || '', jb = b.join_date || '';
+      var ja = a.join_time || '', jb = b.join_time || '';
       return jb.localeCompare(ja);
     });
 
@@ -1673,15 +1674,15 @@ footer.note{font-size:11.5px;color:var(--text-soft);text-align:center;margin-top
       }
       return '<div class="va-row">'+
         '<div class="va-row-top">'+
-          '<div><div class="name">'+esc(u.gametize_name)+'</div><div class="meta">'+esc(u.gametize_email||'(no email on file)')+'</div></div>'+
+          '<div><div class="name">'+esc(u.name)+'</div><div class="meta">'+esc(u.email||'(no email on file)')+'</div></div>'+
           '<span class="badge '+bucketClass(u.bucket)+'">'+esc(bucketLabel(u.bucket))+'</span>'+
         '</div>'+
         '<div class="stat-mini-row">'+
           '<span>Joined Gametize: <b>'+fmtJoin(u)+'</b></span>'+
-          '<span>Progress: <b>'+(u.progress_pct||0).toFixed(1)+'%</b></span>'+
+          '<span>Challenges completed: <b>'+fmtNum(u.challenges_completed)+'</b></span>'+
           '<span>Topics completed: <b>'+fmtNum(u.topics_completed)+'</b></span>'+
           '<span>Points: <b>'+fmtNum(u.points)+'</b></span>'+
-          '<span>Last active: <b>'+fmtDays(u.days_since_last_activity)+'</b></span>'+
+          '<span>Last active: <b>'+esc(u.last_activity_at||'—')+'</b></span>'+
         '</div>'+
         topicsHtml+
       '</div>';
